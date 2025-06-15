@@ -1,5 +1,5 @@
 import pygame
-from pygame import Vector2
+from pygame import Vector2, Color
 from ray import Ray
 from ground_gen import Material
 
@@ -10,16 +10,18 @@ class RaysEmmiter():
         self.lines = lines
 
         self.universal_material =  Material('black', 1, True)
+        self.curr_material = Material('black', 1, True)#Material('blue', 1.6, True)#Material('black', 1, True) (testing purposes)
 
         #Rays initialisation
+        self.color = Color(255, 255, 0)
 
         dir:Vector2 = self.end - self.start
-        self.how_many =  1#max(1, int(dir.length() / 12))
+        self.how_many =  max(1, int(dir.length() / 12))
         
         self.rays_dist = dir / self.how_many   
-        self.normal = Vector2(-dir.y, dir.x)
+        self.normal = Vector2(-dir.y, dir.x).normalize()
         self.rays = []
-        self.initial_rays = [Ray(self.start + i * self.rays_dist, self.normal, self.lines, color = 'grey', curr_material =self.universal_material, universal = self.universal_material) for i in range(self.how_many + 1)]
+        self.initial_rays = [Ray(self.start + i * self.rays_dist, self.normal, self.lines, color = self.color, curr_material = self.curr_material, universal = self.universal_material, strength = 1) for i in range(self.how_many + 1)]
         for ray in self.initial_rays:
             self.rays.extend(ray.calculate())
     
@@ -37,12 +39,12 @@ class RaysEmmiter():
 
 
         dir:Vector2 = self.end - self.start
-        self.how_many:int =  1#max(1, int(dir.length() / 12))
+        self.how_many:int =  max(1, int(dir.length() / 12))
         self.rays_dist:Vector2 = dir / self.how_many  
-        self.normal = Vector2(-dir.y, dir.x)   
+        self.normal = Vector2(-dir.y, dir.x).normalize()   
 
         self.rays = []
-        self.initial_rays = [Ray(self.start + i * self.rays_dist, self.normal, self.lines, color= 'grey', curr_material = self.universal_material, universal = self.universal_material) for i in range(self.how_many + 1)]
+        self.initial_rays = [Ray(self.start + i * self.rays_dist, self.normal, self.lines, color= self.color, curr_material = self.curr_material, universal = self.universal_material, strength = 1) for i in range(self.how_many + 1)]
 
         # for i, ray in enumerate(self.initial_rays): 
         #     ray.move(self.start + i * self.rays_dist, self.normal)
