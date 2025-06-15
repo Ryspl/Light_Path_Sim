@@ -1,6 +1,6 @@
 import pygame
 from pygame import Vector2, Color
-from  math import sin, asin
+from  math import sin, sqrt, cos, acos
 from ground_gen import Material
 
 
@@ -12,7 +12,8 @@ from ground_gen import Material
 
 
 # TO DO
-# find the fucking new_dir when passing through new material
+# correct the fucking collision detection
+# calc the strength of reflection for full internal reflection (is it 1? - i set it on one, it doent mean that it its correct)
 # make so that rays can be spawned inside a material (idea: make rects/triangles     that depicts if the start is in a material)
 
 
@@ -25,7 +26,7 @@ from ground_gen import Material
 
 EPS = 0.001
 class Ray():
-    def __init__(self, start, dir, lines, last_line:int = None, curr_material = Material('black', 1, True), color = 'white', universal = Material('black', 1, True)):
+    def __init__(self, start, dir, lines, last_line:int = None, curr_material:Material = Material('black', 1, True), color:Color = Color(255, 255, 0), universal:Material = Material('black', 1, True), strength = 1):
         self.start:Vector2 = start
         self.dir:Vector2 = dir
         self.collision_point:Vector2 = None
@@ -39,9 +40,11 @@ class Ray():
 
         self.reflected_rays = []
 
+        self.strength = strength
+
         self.lines = lines
         self.last_line = last_line
-        self.color = color #Color(255,255,255)
+        self.color = Color(int(color.r * self.strength), int(color.g * self.strength), int(color.b * self.strength))
         
     
     def draw(self, screen, font):
@@ -89,35 +92,22 @@ class Ray():
 
                 self.collision_point = p + t * r
                 self.normal = self.lines[i].normal
-
-                #reflected ray (always present) (for update to weaken if other passed)
-
-                self.reflected_rays.append(Ray(self.collision_point, self.dir.reflect(self.normal), self.lines, i, self.curr_material,  universal = self.universal))   
-
-                #ray that can pass through
+                self.normal = self.normal if self.normal.dot(self.dir) < 0 else -self.normal
 
                 if not self.lines[i].material.is_passable:
                     # case light cannot possibly go through
 
+                    #FULLY REFLECTED RAY
+                    self.reflected_rays.append(Ray(self.collision_point, 
+                                                   self.dir.reflect(self.normal), 
+                                                   self.lines, 
+                                                   i, 
+                                                   curr_material=self.curr_material,  
+                                                   universal = self.universal, 
+                                                   strength= self.strength)) 
                     return True
-                
-                # elif not self.lines[i].is_full:
-                #     # case that a line is a line not a border between materials
-                #     self.temp_material = self.lines[i].material
 
-                #     n1 = self.last_material.light_bent_factor
-                #     n2 = self.temp_material.light_bent_factor
-                #     alpha = self.dir.reflect(self.normal).angle_to(self.normal)
-
-                #     beta = asin(sin(alpha) * n1 / n2)
-
-                #     new_dir = self.dir.reflect(self.normal).rotate(-beta).reflect(self.lines[i].dir)
-
-                #     self.reflected_rays.append(Ray(self.collision_point, new_dir, self.lines, i, self.curr_material))
-
-                #     return True
-
-                elif self.curr_material == self.lines[i].material:
+                elif self.curr_material.light_bent_factor == self.lines[i].material.light_bent_factor:
                     # case that line exits the current material (eg. went through glass -> leaves glass)
                     
                     self.last_material = self.curr_material
@@ -128,22 +118,50 @@ class Ray():
 
                     self.last_material = self.curr_material
                     self.curr_material = self.lines[i].material
-                
+
 
                 n1 = self.last_material.light_bent_factor
                 n2 = self.curr_material.light_bent_factor
 
-                # check if an angle is a limit angle and not to go through
-                alpha = min((-self.dir).angle_to(self.normal), (-self.dir).angle_to(-self.normal))
+                alpha = acos(self.normal.dot(self.dir))
                 
-                beta = asin(sin(alpha) * n1 / n2)
+                #IF A RAY CAN PASS AN OBJECT AND PASSES THROUGH (NO INTERNAL REFLECTIONS)
+                if sin(alpha) <= (n2 / n1) or n1 < n2:
 
-                thetha = alpha - beta
-
-                new_dir = self.dir.reflect(self.normal).rotate(-thetha) #set angle between normal and dir to beta
-
-                self.reflected_rays.append(Ray(self.collision_point, new_dir.reflect(self.normal), self.lines, i, self.curr_material, color='yellow'))
+                    strength_refl = self.strength * (((n2 - n1) / (n2 + n1)) ** 2)
+                    strength_refr = 1 - strength_refl 
                     
+                    new_dir = self.normal * ( - n1/n2 * cos(alpha) - sqrt(1 - ((n1/n2) ** 2) * (1 - cos(alpha) ** 2))) + n1/n2 * self.dir 
+
+                    #ray that can pass through
+                    self.reflected_rays.append(Ray(self.collision_point, 
+                                                   new_dir, 
+                                                   self.lines, 
+                                                   i, 
+                                                   self.curr_material, 
+                                                   color = self.color, 
+                                                   strength= strength_refr))
+                    # reflected ray
+                    if strength_refl > 0.004:
+                        self.reflected_rays.append(Ray(self.collision_point, 
+                                                   self.dir.reflect(self.normal), 
+                                                   self.lines, 
+                                                   i, 
+                                                   curr_material=self.curr_material,  
+                                                   universal = self.universal, 
+                                                   strength= strength_refl)) 
+                
+                else: #IF A RAY CAN PASS AN MATERIAL BUT DO NOT PASSES THROUGH (FULL INTERNAL REFLECTION)
+
+                    # reflected ray
+                    self.reflected_rays.append(Ray(self.collision_point, 
+                                                   self.dir.reflect(self.normal), 
+                                                   self.lines, 
+                                                   i, 
+                                                   curr_material=self.curr_material,  
+                                                   universal = self.universal, 
+                                                   strength= self.strength)) 
+
                 return True
 
 
