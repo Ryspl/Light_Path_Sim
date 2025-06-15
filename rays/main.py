@@ -15,13 +15,14 @@ my_font = pygame.font.SysFont('Comic Sans MS', 30)
 
 
 
-# ground = Ground(100, WIDTH, HEIGHT)
-# ground.generate(20)
+ground = Ground(100, WIDTH, HEIGHT)
+ground.generate(20)
 
-glass = GlassBox(Vector2(500,200), Vector2(100,100))
+glass = GlassBox(Vector2(500,200), Vector2(300,300))
 
 
-lines = []#ground.lines.copy()
+lines = []
+# lines.extend(ground.lines)
 lines.extend(glass.lines)
 
 
@@ -63,8 +64,6 @@ while running:
     
     emmiter.draw(screen, my_font)
     for line in lines: line.draw(screen)
-    # ground.draw(screen)
-    # glass.draw(screen)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_ESCAPE]:
