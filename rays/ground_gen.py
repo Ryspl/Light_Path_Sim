@@ -14,14 +14,15 @@ class Line():
         self.start = start
         self.end = end
         self.material = material
-        self.dir = end - start
+        self.dir = (end - start).normalize()
+        self.vec_dir = (end - start)
         self.normal = Vector2(self.dir.y, -self.dir.x).normalize()
         # self.is_full = is_full
         
     
     def draw(self, screen):
         pygame.draw.line(screen, self.material.color, self.start, self.end)
-        pygame.draw.line(screen, 'red', self.start + self.dir / 2, self.start + self.dir / 2 + self.normal * 50)
+        # pygame.draw.line(screen, 'red', self.start + self.vec_dir / 2, self.start + self.vec_dir / 2 + self.normal * 50)
 
 class Ground():
     def __init__(self, ground_height, WIDTH, HEIGHT):
@@ -50,17 +51,16 @@ class Ground():
         for line in self.lines:
             line.draw(screen)
 
-#---------------------------WORK-IN-PROGRESS-----------------------------------------------------------------------------------------------------
+
 class GlassBox():
     def __init__(self, pos:Vector2, size:Vector2):  
         self.pos = pos
         self.size = size
         self.material = Material('blue', 1.5, True)
-        # self.lines = [Line(self.pos, Vector2(self.pos.x + self.size.x, self.pos.y), self.material, True), 
-        #               Line(Vector2(self.pos.x, self.pos.y + self.size.y),self.pos, self.material, True),
-        #               Line(Vector2(self.pos.x + self.size.x, self.pos.y), self.pos + self.size, self.material, True),
-        #               Line(Vector2(self.pos.x, self.pos.y + self.size.y), self.pos + self.size, self.material, True)]
-        self.lines = [Line(Vector2(0, 500), Vector2(1280, 500), self.material, True)]
+        self.lines = [Line(self.pos, Vector2(self.pos.x + self.size.x, self.pos.y), self.material, True), 
+                      Line(Vector2(self.pos.x, self.pos.y + self.size.y),self.pos, self.material, True),
+                      Line(Vector2(self.pos.x + self.size.x, self.pos.y), self.pos + self.size, self.material, True),
+                      Line(Vector2(self.pos.x, self.pos.y + self.size.y), self.pos + self.size, self.material, True)]
 
 
     
